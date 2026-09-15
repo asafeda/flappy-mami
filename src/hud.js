@@ -193,6 +193,28 @@ function medalForScore(score) {
   return null;
 }
 
+// Bordered pixel-style button with centered label. Returns the world-space
+// hit rect so the caller can test taps against it.
+function drawPixelButton(ctx, cx, cy, w, h, label, opts = {}) {
+  const scale = opts.scale || 1.6;
+  ctx.save();
+  ctx.fillStyle = opts.fill || PAPER;
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = 3;
+  ctx.fillRect(cx - w / 2, cy - h / 2, w, h);
+  ctx.strokeRect(cx - w / 2, cy - h / 2, w, h);
+
+  const { height: textH } = measurePixelText(label, scale);
+  drawPixelText(ctx, label, cx, cy - textH / 2, {
+    scale,
+    color: opts.color || INK,
+    align: "center",
+  });
+  ctx.restore();
+
+  return { x: cx - w / 2, y: cy - h / 2, w, h };
+}
+
 function drawMedal(ctx, cx, cy, radius, color) {
   ctx.save();
   ctx.translate(cx, cy);
@@ -216,9 +238,9 @@ export function drawGameOver(ctx, worldWidth, worldHeight, score, highScore, isN
   ctx.fillRect(0, 0, worldWidth, worldHeight);
 
   const panelW = Math.min(worldWidth * 0.82, 340);
-  const panelH = 240;
+  const panelH = 288;
   const panelX = (worldWidth - panelW) / 2;
-  const panelY = worldHeight * 0.28;
+  const panelY = worldHeight * 0.26;
 
   // Retro panel: paper fill, hard ink border, thin inset highlight border.
   ctx.fillStyle = "#2b2b45";
@@ -266,7 +288,7 @@ export function drawGameOver(ctx, worldWidth, worldHeight, score, highScore, isN
   if (isNewHighScore && score > 0) {
     const blink = Math.sin(performance.now() / 180) > -0.3;
     if (blink) {
-      drawPixelText(ctx, "NEW BEST!", cx, panelY + panelH - 56, {
+      drawPixelText(ctx, "NEW BEST!", cx, panelY + 188, {
         scale: 2,
         color: "#7CFC00",
         shadow: INK,
@@ -278,7 +300,7 @@ export function drawGameOver(ctx, worldWidth, worldHeight, score, highScore, isN
 
   const blink = Math.sin(performance.now() / 260) > -0.2;
   if (blink) {
-    drawPixelText(ctx, "TAP TO RETRY", cx, panelY + panelH - 28, {
+    drawPixelText(ctx, "TAP TO RETRY", cx, panelY + 216, {
       scale: 1.8,
       color: PAPER,
       shadow: INK,
@@ -287,5 +309,17 @@ export function drawGameOver(ctx, worldWidth, worldHeight, score, highScore, isN
     });
   }
 
+  const menuButton = drawPixelButton(
+    ctx,
+    cx,
+    panelY + panelH - 32,
+    140,
+    34,
+    "MAIN MENU",
+    { scale: 1.4 }
+  );
+
   ctx.restore();
+
+  return { menuButton };
 }

@@ -29,6 +29,7 @@ export class Game {
     this.shakeTimer = 0;
     this.flashTimer = 0;
     this.titleHitRects = null;
+    this.deadHitRects = null;
 
     this.skins = buildSkinList(assets);
     this.skinIndex = indexForSkinId(this.skins, loadSelectedSkinId());
@@ -53,7 +54,7 @@ export class Game {
     this.cycleSkin(direction);
   }
 
-  hitTestArrow(rect, point) {
+  hitTestRect(rect, point) {
     if (!rect || !point) return false;
     // Pad the tappable area beyond the visual button for friendlier touch targets.
     const pad = 14;
@@ -63,6 +64,12 @@ export class Game {
       point.y >= rect.y - pad &&
       point.y <= rect.y + rect.h + pad
     );
+  }
+
+  // Returns to the title screen with score/pipes/collectibles cleared, but
+  // keeps the high score and selected skin intact.
+  goToMenu() {
+    this.reset();
   }
 
   resize(worldWidth, worldHeight) {
@@ -83,6 +90,7 @@ export class Game {
     this.score = 0;
     this.deadTimer = 0;
     this.groundScroll = 0;
+    this.deadHitRects = null;
     this.bird = new Bird(this.worldHeight);
     this.pipes.reset();
     this.collectibles.reset();
@@ -92,11 +100,11 @@ export class Game {
   handleTap(point) {
     if (this.state === "ready") {
       if (this.titleHitRects) {
-        if (this.hitTestArrow(this.titleHitRects.leftArrow, point)) {
+        if (this.hitTestRect(this.titleHitRects.leftArrow, point)) {
           this.cycleSkin(-1);
           return;
         }
-        if (this.hitTestArrow(this.titleHitRects.rightArrow, point)) {
+        if (this.hitTestRect(this.titleHitRects.rightArrow, point)) {
           this.cycleSkin(1);
           return;
         }
@@ -109,6 +117,10 @@ export class Game {
       playSound(this.assets.sounds.flap);
     } else if (this.state === "dead") {
       if (this.deadTimer > 0.4) {
+        if (this.deadHitRects && this.hitTestRect(this.deadHitRects.menuButton, point)) {
+          this.goToMenu();
+          return;
+        }
         this.reset();
         this.state = "playing";
         this.bird.flap();
@@ -195,23 +207,36 @@ export class Game {
       return;
     }
 
-    // Dirt band
-    ctx.fillStyle = "#d9a441";
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+
+    // Dirt base
+    ctx.fillStyle = "#c9903f";
     ctx.fillRect(0, y, w, h);
 
-    // Dithered speckle rows for a chunky retro-dirt texture.
-    const speckle = 6;
-    const rowOffset = Math.floor(this.groundScroll) % (speckle * 2);
-    ctx.fillStyle = "#c68a2e";
-    for (let row = 0; row < 4; row++) {
-      const ry = y + 14 + row * 16;
-      const shift = row % 2 === 0 ? -rowOffset : rowOffset;
-      for (let x = shift; x < w; x += speckle * 2) {
-        ctx.fillRect(x, ry, speckle, speckle);
+    // Chunky checkerboard/brick texture. Every tile scrolls in the same
+    // direction (matching the pipes/background); alternating rows just get a
+    // fixed half-tile stagger for the classic brick look, so nothing drifts
+    // backwards like the old dithered-speckle version did.
+    const tile = 18;
+    const scroll = Math.floor(this.groundScroll) % tile;
+    const rows = Math.ceil(h / tile);
+    const cols = Math.ceil(w / tile) + 2;
+    for (let row = 0; row < rows; row++) {
+      const ry = y + row * tile;
+      const rowShift = (row % 2) * (tile / 2);
+      for (let col = -1; col < cols; col++) {
+        const rx = col * tile - scroll + rowShift;
+        if ((col + row) % 2 === 0) {
+          ctx.fillStyle = "#dba750";
+        } else {
+          ctx.fillStyle = "#b9822f";
+        }
+        ctx.fillRect(rx, ry, tile - 2, tile - 2);
       }
     }
 
-    // Grass strip with a jagged tooth edge on top.
+    // Grass cap along the top edge (the actual collision line).
     const grassH = 14;
     ctx.fillStyle = "#7cd858";
     ctx.fillRect(0, y - grassH, w, grassH);
@@ -228,6 +253,8 @@ export class Game {
     ctx.moveTo(0, y - grassH);
     ctx.lineTo(w, y - grassH);
     ctx.stroke();
+
+    ctx.restore();
   }
 
   draw(ctx) {
@@ -272,7 +299,7 @@ export class Game {
       drawScore(ctx, this.worldWidth, this.score, this.scoreFlashTimer / 0.2);
     } else if (this.state === "dead") {
       drawScore(ctx, this.worldWidth, this.score, 0);
-      drawGameOver(
+      this.deadHitRects = drawGameOver(
         ctx,
         this.worldWidth,
         this.worldHeight,
