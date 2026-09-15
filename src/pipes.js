@@ -54,9 +54,10 @@ export class PipeManager {
     const lastPipe = this.pipes[this.pipes.length - 1];
     const shouldSpawn = !lastPipe || this.worldWidth - lastPipe.x >= spacing;
     if (shouldSpawn && this.distanceSinceLastSpawn >= spacing) {
+      const prev = lastPipe;
       const pipe = this.spawnPipe(tier);
       this.distanceSinceLastSpawn = 0;
-      if (onPipeReady) onPipeReady(pipe);
+      if (onPipeReady) onPipeReady(pipe, prev);
     }
   }
 

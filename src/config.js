@@ -44,17 +44,17 @@ export const DIFFICULTY = {
 };
 
 export const COLLECTIBLES = {
-  firstScore: 10, // collectibles never spawn before this score
+  firstScore: 5, // collectibles never spawn before this score
   hitboxRadius: 20,
   size: 48,
   baseSpawnChance: 0.45,
   spawnChancePerTier: 0.05,
   maxSpawnChance: 0.85,
-  defaultPoints: 3,
+  defaultPoints: 2,
 };
 
 export const BACKGROUND = {
-  changeEveryPoints: 20,
+  changeEveryPipes: 10,
   crossfadeMs: 600,
   parallaxFactor: 0.35, // fraction of world scroll speed
 };

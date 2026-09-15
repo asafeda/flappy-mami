@@ -1,4 +1,4 @@
-import { COLLECTIBLES, GROUND } from "./config.js";
+import { BIRD, COLLECTIBLES, GROUND } from "./config.js";
 import { pickCollectible } from "./coins.js";
 
 export class CollectibleManager {
@@ -23,9 +23,11 @@ export class CollectibleManager {
     );
   }
 
-  // Called right after a pipe spawns, so the collectible can be placed
-  // relative to that pipe's gap.
-  maybeSpawnForPipe(pipe, score, tier) {
+  // Called right after a new pipe column spawns. The collectible is placed in
+  // the open corridor between the previous column and this one — never inside
+  // a pipe gap.
+  maybeSpawnBetween(prevPipe, nextPipe, score, tier) {
+    if (!prevPipe || !nextPipe) return;
     const assets = this.getAssets();
     if (!assets.collectibles || assets.collectibles.length === 0) return;
     if (score < COLLECTIBLES.firstScore) return;
@@ -33,7 +35,7 @@ export class CollectibleManager {
 
     const def = pickCollectible(assets.collectibles);
     if (!def) return;
-    const { x, y } = this.placementForTier(pipe, tier);
+    const { x, y } = this.placementBetween(prevPipe, nextPipe, tier);
 
     this.items.push({
       x,
@@ -48,59 +50,30 @@ export class CollectibleManager {
     });
   }
 
-  // Escalating placement difficulty. Tier 1 = easy/central, higher tiers push
-  // the collectible toward gap edges, pipe caps, and the ceiling/floor.
-  placementForTier(pipe, tier) {
-    const gapCenter = (pipe.gapTop + pipe.gapBottom) / 2;
-    const gapHalf = (pipe.gapBottom - pipe.gapTop) / 2;
-    const cx = pipe.x + pipe.width / 2;
+  // Random but reachable: sit in the strip between columns, near the flight
+  // path between the two gaps, with a vertical detour that grows with tier.
+  placementBetween(prevPipe, nextPipe, tier) {
+    const padding = COLLECTIBLES.size / 2 + 8;
+    const left = prevPipe.x + prevPipe.width + padding;
+    const right = nextPipe.x - padding;
+    const span = right - left;
+    const t = 0.35 + Math.random() * 0.3;
+    const x = span > 0 ? left + span * t : (prevPipe.x + prevPipe.width + nextPipe.x) / 2;
+
+    const prevCenter = (prevPipe.gapTop + prevPipe.gapBottom) / 2;
+    const nextCenter = (nextPipe.gapTop + nextPipe.gapBottom) / 2;
+    const pathY = prevCenter + (nextCenter - prevCenter) * t;
+
     const bottom = this.playableBottom();
+    const margin = BIRD.hitboxRadius + COLLECTIBLES.hitboxRadius + 16;
+    const minY = margin;
+    const maxY = bottom - margin;
+    const playable = Math.max(0, maxY - minY);
+    const maxOff = playable * Math.min(0.25 + tier * 0.08, 0.7);
+    const offset = (Math.random() * 2 - 1) * maxOff;
+    const y = Math.max(minY, Math.min(maxY, pathY + offset));
 
-    if (tier <= 1) {
-      // Dead center of the gap: essentially free.
-      return { x: cx, y: gapCenter };
-    }
-
-    if (tier === 2) {
-      // Offset ~30% toward a random gap edge.
-      const dir = Math.random() < 0.5 ? -1 : 1;
-      return { x: cx, y: gapCenter + dir * gapHalf * 0.3 };
-    }
-
-    if (tier === 3) {
-      // Just inside a gap edge: needs a deliberate flap to line up.
-      const dir = Math.random() < 0.5 ? -1 : 1;
-      return { x: cx, y: gapCenter + dir * gapHalf * 0.7 };
-    }
-
-    if (tier === 4) {
-      // Right at the gap edge, plus a lateral offset before the pipe so you
-      // have to commit to the line before reaching it.
-      const dir = Math.random() < 0.5 ? -1 : 1;
-      const lateral = pipe.width * 0.6;
-      return {
-        x: cx - lateral,
-        y: gapCenter + dir * gapHalf * 0.9,
-      };
-    }
-
-    // Tier 5+: tight pockets right above/below a pipe cap, or out near the
-    // ceiling/floor between this pipe and the next one - a real detour.
-    const variant = Math.floor(Math.random() * 3);
-    if (variant === 0) {
-      // Just above the top pipe's cap (inside the gap, hugging the edge).
-      return { x: cx, y: pipe.gapTop + 14 };
-    }
-    if (variant === 1) {
-      // Just below the bottom pipe's cap.
-      return { x: cx, y: pipe.gapBottom - 14 };
-    }
-    // Near the ceiling or floor, offset past the pipe.
-    const nearTop = Math.random() < 0.5;
-    return {
-      x: pipe.x + pipe.width + 60,
-      y: nearTop ? 40 : bottom - 40,
-    };
+    return { x, y };
   }
 
   update(dt, speedPxPerSec, bird, onCollected) {

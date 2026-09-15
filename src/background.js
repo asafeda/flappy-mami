@@ -36,18 +36,31 @@ export class BackgroundManager {
     this.worldHeight = worldHeight;
     this.getAssets = getAssets;
     this.scrollX = 0;
-    this.currentIndex = 0;
+    // -1 = starter wallpaper (default.* or the built-in 8-bit sky).
+    this.currentIndex = -1;
     this.nextIndex = null;
     this.fadeProgress = 0;
-    this.lastBgTier = 0;
   }
 
   reset() {
     this.scrollX = 0;
-    this.currentIndex = 0;
+    this.currentIndex = -1;
     this.nextIndex = null;
     this.fadeProgress = 0;
-    this.lastBgTier = 0;
+  }
+
+  extras() {
+    return this.getAssets().backgrounds || [];
+  }
+
+  // Pipes 0-9 stay on the starter wallpaper. After that, extras rotate in
+  // filename order: bg1, bg2, bg3, bg1, ...
+  targetIndex(pipesPassed) {
+    const extras = this.extras();
+    if (!extras.length) return -1;
+    const slot = Math.floor(pipesPassed / BACKGROUND.changeEveryPipes) - 1;
+    if (slot < 0) return -1;
+    return slot % extras.length;
   }
 
   update(dt, speedPxPerSec) {
@@ -63,21 +76,29 @@ export class BackgroundManager {
     }
   }
 
-  maybeSwap(score) {
-    const backgrounds = this.getAssets().backgrounds;
-    if (!backgrounds || backgrounds.length <= 1) return;
-
-    const tier = Math.floor(score / BACKGROUND.changeEveryPoints);
-    if (tier === this.lastBgTier) return;
-    this.lastBgTier = tier;
-
-    let idx;
-    do {
-      idx = Math.floor(Math.random() * backgrounds.length);
-    } while (idx === this.currentIndex && backgrounds.length > 1);
-
-    this.nextIndex = idx;
+  maybeSwap(pipesPassed) {
+    const target = this.targetIndex(pipesPassed);
+    if (target === this.currentIndex) return;
+    if (target === this.nextIndex) return;
+    this.nextIndex = target;
     this.fadeProgress = 0;
+  }
+
+  imageForIndex(index) {
+    if (index == null || index < 0) {
+      return this.getAssets().defaultBackground || null;
+    }
+    const extras = this.extras();
+    return extras[index] || null;
+  }
+
+  drawSky(ctx, index) {
+    const entry = this.imageForIndex(index);
+    if (entry && entry.image) {
+      this.drawLayer(ctx, entry.image);
+    } else {
+      drawPlaceholderSky(ctx, this.worldWidth, this.worldHeight, this.scrollX);
+    }
   }
 
   drawLayer(ctx, img) {
@@ -93,19 +114,12 @@ export class BackgroundManager {
   }
 
   draw(ctx) {
-    const backgrounds = this.getAssets().backgrounds;
-    if (!backgrounds || backgrounds.length === 0) {
-      drawPlaceholderSky(ctx, this.worldWidth, this.worldHeight, this.scrollX);
-      return;
-    }
+    this.drawSky(ctx, this.currentIndex);
 
-    const current = backgrounds[this.currentIndex] || backgrounds[0];
-    if (current) this.drawLayer(ctx, current.image);
-
-    if (this.nextIndex !== null && backgrounds[this.nextIndex]) {
+    if (this.nextIndex !== null) {
       ctx.save();
       ctx.globalAlpha = Math.min(1, this.fadeProgress);
-      this.drawLayer(ctx, backgrounds[this.nextIndex].image);
+      this.drawSky(ctx, this.nextIndex);
       ctx.restore();
     }
   }

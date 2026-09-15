@@ -72,20 +72,18 @@ export async function loadAssets() {
     collectibles = createBuiltinCoins();
   }
 
-  const defaultIndex = (manifest.backgrounds || []).findIndex(
-    (b) => b === manifest.defaultBackground
-  );
-  const backgrounds = (manifest.backgrounds || [])
+  const allBackgrounds = (manifest.backgrounds || [])
     .map((src, i) => ({ src, image: backgroundImages[i] }))
     .filter((b) => b.image);
-  // Move default background to the front so it's used at score 0.
-  if (defaultIndex >= 0) {
-    const idx = backgrounds.findIndex((b) => b.src === manifest.defaultBackground);
-    if (idx > 0) {
-      const [def] = backgrounds.splice(idx, 1);
-      backgrounds.unshift(def);
-    }
-  }
+
+  // Only a file actually named default.* is the starter wallpaper. Everything
+  // else is the round-robin extras. If there is no default.* (the usual case),
+  // the game draws the built-in 8-bit sky until the extras start rotating.
+  const defaultSrc = manifest.defaultBackground || null;
+  const defaultBackground = defaultSrc
+    ? allBackgrounds.find((b) => b.src === defaultSrc) || null
+    : null;
+  const backgrounds = allBackgrounds.filter((b) => b.src !== defaultSrc);
 
   const sounds = {
     flap: loadAudio(manifest.audio?.flap),
@@ -98,6 +96,7 @@ export async function loadAssets() {
   return {
     birds,
     collectibles,
+    defaultBackground,
     backgrounds,
     title: titleImg,
     pipeBody: pipeBodyImg,

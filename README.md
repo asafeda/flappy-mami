@@ -9,9 +9,9 @@ Play it live at: `https://<your-github-username>.github.io/flappy-mami/`
 - Tap/click anywhere (or press Space / Up) to flap.
 - On the title screen, use the `<` / `>` pixel arrows (or Left/Right arrow keys) to pick a bird skin before you start. Your choice is remembered on this device.
 - Every **10 points**, difficulty ramps up: faster scroll speed, a tighter pipe gap, tighter pipe spacing, and collectibles get placed in progressively trickier spots. Pipes also shift through a green → teal → blue → violet → pink palette as tiers climb.
-- Collectibles only start appearing from **10 points** onward. Until you drop in your own PNGs, spinning 8-bit gold / silver / red coins spawn as fallbacks (red coins are worth more).
+- Collectibles start appearing from **5 points** onward and are worth **2 points** each. They spawn in the open space **between** pipe columns (never inside a pipe gap), on a reachable but increasingly tricky flight path. Until you drop in your own PNGs, spinning 8-bit coins spawn as fallbacks.
 - 8-bit sound effects play on flap, score, coin collect, and crash. Dropping your own `mp3` files in `assets/audio/` replaces the built-in chiptune.
-- Every **20 points**, the background crossfades to a new random one (if you've added more than one).
+- The run starts on the built-in 8-bit sky (or `assets/backgrounds/default.*` if you add one). Every **10 pipes** passed, the background crossfades to the next uploaded wallpaper in filename order, then wraps.
 - Until you add your own art, the game runs fully playable with a hand-drawn 8-bit look: blocky bird, pixel-outlined pipes, banded sky with parallax hills/clouds, and a bitmap-font HUD.
 
 ## Adding your own assets (no code changes needed)
@@ -25,7 +25,7 @@ Photoshop setup for every asset: **New Document → RGB Color, 8-bit, sRGB, 72 p
 | Title logo | `assets/ui/title.png` | 1152 x 432 px, transparent | Shown at ~80% screen width on the start screen. Leave ~24px transparent padding on all sides. |
 | Bird skins | `assets/birds/*.png` (any filename, one skin per file) | Square, e.g. 288x288 px | Each image is a **complete, static skin** — a face photo, a drawing, anything square. It gets circle-cropped and framed automatically, with a small pixel wing/beak drawn on top so it still flaps like a bird. Drop as many as you want; each becomes a choice in the in-game picker (alongside the built-in "Classic" 8-bit bird, which is always first). Rename files to control the label shown in the picker (e.g. `mami-face.png` → "MAMI FACE"), or set custom labels/order in `assets/birds/birds.config.json`. |
 | Collectibles | `assets/collectibles/*.png` (any filename) | 120 x 120 px each, transparent | Add as many as you want — each is picked randomly, and they **replace** the built-in 8-bit coins. Bold silhouette + thick outline so it reads small. Optionally override points/effects per file in `assets/collectibles/collectibles.config.json`. |
-| Backgrounds | `assets/backgrounds/default.jpg` (+ any others) | 1440 x 2880 px | Keep key art inside the central 1440x2560 safe area. `default.*` always shows at score 0; every other file joins the random rotation every 20 points. JPEG quality 80–85 (~350KB) or PNG. |
+| Backgrounds | `assets/backgrounds/default.jpg` (optional) + any others (`bg1.png`, …) | 1440 x 2880 px | Keep key art inside the central 1440x2560 safe area. The built-in 8-bit sky (or `default.*` if present) shows at the start; every other file joins a filename-order round-robin every 10 pipes. JPEG quality 80–85 (~350KB) or PNG. |
 | Pipes (optional) | `assets/ui/pipe-body.png` (192x960, vertically tileable), `assets/ui/pipe-cap.png` (216x96) | Replaces the procedural pixel pipes if both are present. |
 | Ground (optional) | `assets/ui/ground.png` (1440x336, horizontally tileable) | Replaces the procedural scrolling ground strip. |
 | Sounds (optional) | `assets/audio/flap.mp3`, `point.mp3`, `collect.mp3`, `hit.mp3`, `ui.mp3` | Mono, 44.1kHz, <30KB each. Omit any file to keep the built-in 8-bit version of that cue. |
@@ -59,9 +59,9 @@ Edit `assets/collectibles/collectibles.config.json`:
 }
 ```
 
-Any collectible file without an entry defaults to 3 points.
+Any collectible file without an entry defaults to 2 points.
 
-Until you add files, the game uses three built-in coins: gold (3 pts), silver (2 pts), and red (5 pts). Red is rarer.
+Until you add files, the game uses built-in 8-bit coins worth 2 points.
 
 ## Local development
 

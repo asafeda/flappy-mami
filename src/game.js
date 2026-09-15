@@ -21,6 +21,7 @@ export class Game {
     this.worldHeight = WORLD.minHeight; // corrected by the first resize()
     this.state = "ready"; // ready | playing | dead
     this.score = 0;
+    this.pipesPassed = 0;
     this.highScore = getHighScore();
     this.isNewHighScore = false;
     this.groundScroll = 0;
@@ -89,6 +90,7 @@ export class Game {
   reset() {
     this.state = "ready";
     this.score = 0;
+    this.pipesPassed = 0;
     this.deadTimer = 0;
     this.groundScroll = 0;
     this.deadHitRects = null;
@@ -160,23 +162,23 @@ export class Game {
     this.background.update(dt, speed);
     this.groundScroll += speed * dt;
 
-    this.pipes.update(dt, speed, tier, (pipe) => {
-      this.collectibles.maybeSpawnForPipe(pipe, this.score, tier);
+    this.pipes.update(dt, speed, tier, (pipe, prevPipe) => {
+      this.collectibles.maybeSpawnBetween(prevPipe, pipe, this.score, tier);
     });
 
     const scoredCount = this.pipes.collectScoring(this.bird.x);
     if (scoredCount > 0) {
       this.score += scoredCount;
+      this.pipesPassed += scoredCount;
       this.scoreFlashTimer = 0.2;
       playSfx("point", this.assets.sounds.point);
-      this.background.maybeSwap(this.score);
+      this.background.maybeSwap(this.pipesPassed);
     }
 
     this.collectibles.update(dt, speed, this.bird, (item) => {
       this.score += item.points;
       this.scoreFlashTimer = 0.2;
       playSfx("collect", this.assets.sounds.collect);
-      this.background.maybeSwap(this.score);
     });
 
     if (this.pipes.collidesWith(this.bird) || this.pipes.hitsGroundOrCeiling(this.bird)) {

@@ -141,9 +141,9 @@ let cached = null;
 export function createBuiltinCoins() {
   if (cached) return cached;
   cached = [
-    bakeCoin("gold-coin", "gold", 3, 5),
+    bakeCoin("gold-coin", "gold", 2, 5),
     bakeCoin("silver-coin", "silver", 2, 3),
-    bakeCoin("red-coin", "red", 5, 2),
+    bakeCoin("red-coin", "red", 2, 2),
   ];
   return cached;
 }

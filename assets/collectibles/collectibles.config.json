@@ -1,7 +1,3 @@
 {
-  "_comment": "Optional overrides, keyed by filename inside assets/collectibles/. Any file without an entry here defaults to 3 points and no effect. Remove the example below or replace it with your own filenames.",
-  "example-star.png": {
-    "points": 5,
-    "effect": null
-  }
+  "_comment": "Optional overrides, keyed by filename inside assets/collectibles/. Any file without an entry here defaults to 2 points and no effect."
 }

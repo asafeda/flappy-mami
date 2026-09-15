@@ -101,7 +101,7 @@ async function main() {
     .filter((f) => f !== "collectibles.config.json")
     .map((file) => ({
       file: `assets/collectibles/${file}`,
-      points: collectiblesConfig[file]?.points ?? 3,
+      points: collectiblesConfig[file]?.points ?? 2,
       effect: collectiblesConfig[file]?.effect ?? null,
     }));
 
@@ -117,7 +117,7 @@ async function main() {
     bird: birds.map((b) => b.file),
     collectibles,
     backgrounds,
-    defaultBackground: defaultBg || backgrounds[0] || null,
+    defaultBackground: defaultBg || null,
     ui: {
       title: uiFiles.includes("title.png") ? "assets/ui/title.png" : null,
       pipeBody: uiFiles.includes("pipe-body.png") ? "assets/ui/pipe-body.png" : null,
