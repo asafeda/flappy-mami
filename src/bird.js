@@ -78,11 +78,13 @@ export function drawSkinPreview(ctx, skin, size, wingPhase = 1) {
   }
 }
 
-// A single static photo, circle-masked with a thick pixel outline and a
-// small pixel wing/beak overlay so it still reads as a "bird" mid-flight.
+// A single static photo, circle-masked with a thick pixel outline. The wing
+// is drawn first so it flaps *behind* the portrait instead of covering it.
 function drawPhotoBird(ctx, image, size, wingPhase, alive) {
   const r = size / 2;
   ctx.imageSmoothingEnabled = false;
+
+  drawPhotoWing(ctx, r, wingPhase, "#f7c948", "#b8860b");
 
   // Cover-fit crop so any source aspect ratio fills the circle without warping.
   const srcRatio = image.width / image.height;
@@ -114,8 +116,7 @@ function drawPhotoBird(ctx, image, size, wingPhase, alive) {
   ctx.arc(0, 0, r - 2, 0, Math.PI * 2);
   ctx.stroke();
 
-  drawWing(ctx, r, wingPhase, "#f7c948", "#b8860b");
-  drawBeak(ctx, r, "#ff8c00", "#b8620a");
+  drawPhotoBeak(ctx, r, "#ff8c00", "#b8620a");
 
   if (!alive) drawXEyes(ctx, r);
 }
@@ -200,6 +201,40 @@ function drawBeak(ctx, r, fill, stroke) {
   ctx.moveTo(r * 0.75, 0);
   ctx.lineTo(r * 1.45, r * 0.15);
   ctx.lineTo(r * 0.75, r * 0.4);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+}
+
+// Photo-skin wing: pivot on the left edge so only a crescent peeks out from
+// behind the portrait as it flaps. Same 4-phase angles as the classic wing.
+function drawPhotoWing(ctx, r, wingPhase, fill, stroke) {
+  const angles = [-0.5, 0.1, 0.6, 0.1];
+  const angle = angles[wingPhase] ?? 0.1;
+
+  ctx.save();
+  ctx.translate(-r * 0.75, r * 0.1);
+  ctx.rotate(angle);
+  ctx.fillStyle = fill;
+  ctx.strokeStyle = stroke;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, r * 0.45, r * 0.28, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+}
+
+// Short beak that starts at the portrait rim so it doesn't cover the face.
+function drawPhotoBeak(ctx, r, fill, stroke) {
+  const startX = r - 2;
+  ctx.fillStyle = fill;
+  ctx.strokeStyle = stroke;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(startX, -r * 0.05);
+  ctx.lineTo(startX + r * 0.42, r * 0.08);
+  ctx.lineTo(startX, r * 0.22);
   ctx.closePath();
   ctx.fill();
   ctx.stroke();
