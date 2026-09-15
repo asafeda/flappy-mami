@@ -46,7 +46,7 @@ export const DIFFICULTY = {
 export const COLLECTIBLES = {
   firstScore: 10, // collectibles never spawn before this score
   hitboxRadius: 20,
-  size: 40,
+  size: 48,
   baseSpawnChance: 0.45,
   spawnChancePerTier: 0.05,
   maxSpawnChance: 0.85,

@@ -3,6 +3,8 @@
 // plus keyboard shortcuts for desktop testing. Also unlocks iOS audio
 // playback on the very first gesture.
 
+import { unlockSfx } from "./sfx.js";
+
 export function initInput(canvas, getWorldSize, handlers) {
   const { onTap, onCycle } = handlers;
   let audioUnlocked = false;
@@ -10,19 +12,7 @@ export function initInput(canvas, getWorldSize, handlers) {
   function unlockAudio() {
     if (audioUnlocked) return;
     audioUnlocked = true;
-    // Play-and-immediately-pause a silent buffer to satisfy iOS Safari's
-    // "must originate from a user gesture" autoplay rule.
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const buffer = ctx.createBuffer(1, 1, 22050);
-      const source = ctx.createBufferSource();
-      source.buffer = buffer;
-      source.connect(ctx.destination);
-      source.start(0);
-      if (ctx.state === "suspended") ctx.resume();
-    } catch {
-      // ignore, non-fatal
-    }
+    unlockSfx();
   }
 
   function toWorldPoint(clientX, clientY) {
@@ -52,9 +42,11 @@ export function initInput(canvas, getWorldSize, handlers) {
         onTap(null);
         e.preventDefault();
       } else if (e.code === "ArrowLeft") {
+        unlockAudio();
         if (onCycle) onCycle(-1);
         e.preventDefault();
       } else if (e.code === "ArrowRight") {
+        unlockAudio();
         if (onCycle) onCycle(1);
         e.preventDefault();
       }

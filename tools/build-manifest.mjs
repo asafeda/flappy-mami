@@ -129,6 +129,7 @@ async function main() {
       point: audioFiles.includes("point.mp3") ? "assets/audio/point.mp3" : null,
       collect: audioFiles.includes("collect.mp3") ? "assets/audio/collect.mp3" : null,
       hit: audioFiles.includes("hit.mp3") ? "assets/audio/hit.mp3" : null,
+      ui: audioFiles.includes("ui.mp3") ? "assets/audio/ui.mp3" : null,
     },
   };
 

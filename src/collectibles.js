@@ -1,4 +1,5 @@
 import { COLLECTIBLES, GROUND } from "./config.js";
+import { pickCollectible } from "./coins.js";
 
 export class CollectibleManager {
   constructor(worldHeight, getAssets) {
@@ -30,8 +31,8 @@ export class CollectibleManager {
     if (score < COLLECTIBLES.firstScore) return;
     if (Math.random() > this.spawnChanceForTier(tier)) return;
 
-    const def =
-      assets.collectibles[Math.floor(Math.random() * assets.collectibles.length)];
+    const def = pickCollectible(assets.collectibles);
+    if (!def) return;
     const { x, y } = this.placementForTier(pipe, tier);
 
     this.items.push({
@@ -39,7 +40,8 @@ export class CollectibleManager {
       y,
       size: COLLECTIBLES.size,
       radius: COLLECTIBLES.hitboxRadius,
-      image: def.image,
+      image: def.image || null,
+      frames: def.frames || null,
       points: def.points ?? COLLECTIBLES.defaultPoints,
       effect: def.effect || null,
       collected: false,
@@ -125,12 +127,30 @@ export class CollectibleManager {
     for (const item of this.items) {
       if (item.collected) continue;
       const s = item.size;
-      if (item.image) {
-        const bob = Math.sin(performance.now() / 220 + item.x * 0.05) * 3;
-        ctx.drawImage(item.image, item.x - s / 2, item.y - s / 2 + bob, s, s);
+      const bob = Math.sin(performance.now() / 220 + item.x * 0.05) * 3;
+      const y = item.y + bob;
+
+      ctx.save();
+      ctx.imageSmoothingEnabled = false;
+
+      ctx.fillStyle = "rgba(0,0,0,0.2)";
+      ctx.beginPath();
+      ctx.ellipse(item.x, y + s * 0.42, s * 0.28, s * 0.1, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (item.frames && item.frames.length) {
+        const fps = 10;
+        const idx =
+          Math.floor(performance.now() / (1000 / fps) + item.x * 0.2) %
+          item.frames.length;
+        ctx.drawImage(item.frames[idx], item.x - s / 2, y - s / 2, s, s);
+      } else if (item.image) {
+        ctx.drawImage(item.image, item.x - s / 2, y - s / 2, s, s);
       } else {
         drawPlaceholderCollectible(ctx, item.x, item.y, s);
       }
+
+      ctx.restore();
     }
   }
 }

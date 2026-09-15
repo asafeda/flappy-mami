@@ -6,7 +6,7 @@ import { BackgroundManager } from "./background.js";
 import { tierForScore, speedForTier } from "./difficulty.js";
 import { drawScore, drawTitleScreen, drawGameOver } from "./hud.js";
 import { getHighScore, setHighScoreIfBetter } from "./storage.js";
-import { playSound } from "./assets.js";
+import { playSfx } from "./sfx.js";
 import {
   buildSkinList,
   loadSelectedSkinId,
@@ -45,6 +45,7 @@ export class Game {
     if (len === 0) return;
     this.skinIndex = (this.skinIndex + direction + len) % len;
     saveSelectedSkinId(this.skins[this.skinIndex].id);
+    playSfx("ui", this.assets.sounds.ui);
   }
 
   // Keyboard shortcut entry point (Left/Right arrows); only active on the
@@ -111,10 +112,10 @@ export class Game {
       }
       this.state = "playing";
       this.bird.flap();
-      playSound(this.assets.sounds.flap);
+      playSfx("flap", this.assets.sounds.flap);
     } else if (this.state === "playing") {
       this.bird.flap();
-      playSound(this.assets.sounds.flap);
+      playSfx("flap", this.assets.sounds.flap);
     } else if (this.state === "dead") {
       if (this.deadTimer > 0.4) {
         if (this.deadHitRects && this.hitTestRect(this.deadHitRects.menuButton, point)) {
@@ -124,7 +125,7 @@ export class Game {
         this.reset();
         this.state = "playing";
         this.bird.flap();
-        playSound(this.assets.sounds.flap);
+        playSfx("flap", this.assets.sounds.flap);
       }
     }
   }
@@ -167,14 +168,14 @@ export class Game {
     if (scoredCount > 0) {
       this.score += scoredCount;
       this.scoreFlashTimer = 0.2;
-      playSound(this.assets.sounds.point);
+      playSfx("point", this.assets.sounds.point);
       this.background.maybeSwap(this.score);
     }
 
     this.collectibles.update(dt, speed, this.bird, (item) => {
       this.score += item.points;
       this.scoreFlashTimer = 0.2;
-      playSound(this.assets.sounds.collect);
+      playSfx("collect", this.assets.sounds.collect);
       this.background.maybeSwap(this.score);
     });
 
@@ -193,7 +194,7 @@ export class Game {
     const prevHigh = this.highScore;
     this.highScore = setHighScoreIfBetter(this.score);
     this.isNewHighScore = this.score > prevHigh;
-    playSound(this.assets.sounds.hit);
+    playSfx("hit", this.assets.sounds.hit);
   }
 
   drawGround(ctx) {
