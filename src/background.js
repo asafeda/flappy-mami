@@ -95,7 +95,7 @@ export class BackgroundManager {
   draw(ctx) {
     const backgrounds = this.getAssets().backgrounds;
     if (!backgrounds || backgrounds.length === 0) {
-      drawPlaceholderSky(ctx, this.worldWidth, this.worldHeight);
+      drawPlaceholderSky(ctx, this.worldWidth, this.worldHeight, this.scrollX);
       return;
     }
 
@@ -111,10 +111,57 @@ export class BackgroundManager {
   }
 }
 
-function drawPlaceholderSky(ctx, width, height) {
-  const gradient = ctx.createLinearGradient(0, 0, 0, height);
-  gradient.addColorStop(0, "#4ec0ca");
-  gradient.addColorStop(1, "#bfe9ee");
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, width, height);
+function drawPlaceholderSky(ctx, width, height, scrollX = 0) {
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+
+  // Banded sky gradient (a few flat bands read as "8-bit" better than a
+  // smooth canvas gradient).
+  const bands = ["#3fb0d8", "#5cc4e0", "#7fd6e8", "#a8e4ee"];
+  const bandH = height / bands.length;
+  bands.forEach((color, i) => {
+    ctx.fillStyle = color;
+    ctx.fillRect(0, i * bandH, width, bandH + 1);
+  });
+
+  // Distant hill silhouette, slow parallax.
+  const hillScroll = (scrollX * 0.3) % width;
+  ctx.fillStyle = "#3f9e6e";
+  const hillY = height * 0.62;
+  const hillW = width / 3;
+  for (let i = -1; i <= Math.ceil(width / hillW) + 1; i++) {
+    const hx = i * hillW - hillScroll;
+    ctx.beginPath();
+    ctx.moveTo(hx, height);
+    ctx.lineTo(hx, hillY + 30);
+    ctx.lineTo(hx + hillW * 0.5, hillY);
+    ctx.lineTo(hx + hillW, hillY + 30);
+    ctx.lineTo(hx + hillW, height);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // Chunky pixel clouds, faster parallax.
+  const cloudScroll = (scrollX * 0.6) % (width + 160);
+  ctx.fillStyle = "rgba(255,255,255,0.9)";
+  const cloudY = [height * 0.14, height * 0.24, height * 0.1];
+  for (let i = 0; i < 3; i++) {
+    const baseX = i * (width / 2.2) - cloudScroll + 60;
+    const cx = ((baseX % (width + 160)) + (width + 160)) % (width + 160) - 80;
+    drawPixelCloud(ctx, cx, cloudY[i]);
+  }
+
+  ctx.restore();
+}
+
+function drawPixelCloud(ctx, x, y) {
+  const s = 10;
+  const cells = [
+    [1, 0], [2, 0], [3, 0],
+    [0, 1], [1, 1], [2, 1], [3, 1], [4, 1],
+    [0, 2], [1, 2], [2, 2], [3, 2], [4, 2],
+  ];
+  for (const [cx, cy] of cells) {
+    ctx.fillRect(x + cx * s, y + cy * s, s, s);
+  }
 }

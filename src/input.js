@@ -1,7 +1,10 @@
-// Unified tap input: pointer (covers touch + mouse), plus space/up-arrow for
-// desktop testing. Also unlocks iOS audio playback on the very first gesture.
+// Unified tap input: pointer (covers touch + mouse) mapped to world-space
+// coordinates (so the title-screen skin-picker arrows can be hit-tested),
+// plus keyboard shortcuts for desktop testing. Also unlocks iOS audio
+// playback on the very first gesture.
 
-export function initInput(canvas, onTap) {
+export function initInput(canvas, getWorldSize, handlers) {
+  const { onTap, onCycle } = handlers;
   let audioUnlocked = false;
 
   function unlockAudio() {
@@ -22,9 +25,20 @@ export function initInput(canvas, onTap) {
     }
   }
 
+  function toWorldPoint(clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    const { worldWidth, worldHeight } = getWorldSize();
+    if (!rect.width || !rect.height) return { x: 0, y: 0 };
+    return {
+      x: ((clientX - rect.left) / rect.width) * worldWidth,
+      y: ((clientY - rect.top) / rect.height) * worldHeight,
+    };
+  }
+
   function handleTap(e) {
     unlockAudio();
-    onTap();
+    const point = toWorldPoint(e.clientX, e.clientY);
+    onTap(point);
     if (e && e.preventDefault) e.preventDefault();
   }
 
@@ -34,7 +48,15 @@ export function initInput(canvas, onTap) {
     "keydown",
     (e) => {
       if (e.code === "Space" || e.code === "ArrowUp") {
-        handleTap(e);
+        unlockAudio();
+        onTap(null);
+        e.preventDefault();
+      } else if (e.code === "ArrowLeft") {
+        if (onCycle) onCycle(-1);
+        e.preventDefault();
+      } else if (e.code === "ArrowRight") {
+        if (onCycle) onCycle(1);
+        e.preventDefault();
       }
     },
     { passive: false }

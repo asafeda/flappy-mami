@@ -54,7 +54,10 @@ async function main() {
   window.addEventListener("resize", () => resizeCanvas(game));
   window.addEventListener("orientationchange", () => resizeCanvas(game));
 
-  initInput(canvas, () => game.handleTap());
+  initInput(canvas, () => ({ worldWidth, worldHeight }), {
+    onTap: (point) => game.handleTap(point),
+    onCycle: (direction) => game.requestCycleSkin(direction),
+  });
 
   let lastTime = performance.now();
   let paused = false;

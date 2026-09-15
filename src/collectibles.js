@@ -126,7 +126,8 @@ export class CollectibleManager {
       if (item.collected) continue;
       const s = item.size;
       if (item.image) {
-        ctx.drawImage(item.image, item.x - s / 2, item.y - s / 2, s, s);
+        const bob = Math.sin(performance.now() / 220 + item.x * 0.05) * 3;
+        ctx.drawImage(item.image, item.x - s / 2, item.y - s / 2 + bob, s, s);
       } else {
         drawPlaceholderCollectible(ctx, item.x, item.y, s);
       }
@@ -136,21 +137,36 @@ export class CollectibleManager {
 
 function drawPlaceholderCollectible(ctx, x, y, size) {
   const r = size / 2.3;
+  const t = performance.now() / 1000;
+  // Per-item phase so stars don't all bob/spin in lockstep.
+  const phase = (x * 0.05) % (Math.PI * 2);
+  const bob = Math.sin(t * 3 + phase) * 3;
+  const wobble = Math.sin(t * 2 + phase) * 0.15;
+
   ctx.save();
-  ctx.translate(x, y);
+  ctx.imageSmoothingEnabled = false;
+  ctx.translate(x, y + bob);
+  ctx.rotate(wobble);
+
   ctx.fillStyle = "#ffd54f";
-  ctx.strokeStyle = "#f57f17";
-  ctx.lineWidth = 4;
+  ctx.strokeStyle = "#c9860c";
+  ctx.lineWidth = 3;
   ctx.beginPath();
-  for (let i = 0; i < 5; i++) {
-    const angle = (Math.PI * 2 * i) / 5 - Math.PI / 2;
-    const px = Math.cos(angle) * r;
-    const py = Math.sin(angle) * r;
+  for (let i = 0; i < 10; i++) {
+    const angle = (Math.PI * i) / 5 - Math.PI / 2;
+    const rad = i % 2 === 0 ? r : r * 0.42;
+    const px = Math.cos(angle) * rad;
+    const py = Math.sin(angle) * rad;
     if (i === 0) ctx.moveTo(px, py);
     else ctx.lineTo(px, py);
   }
   ctx.closePath();
   ctx.fill();
   ctx.stroke();
+
+  // Shine pixel
+  ctx.fillStyle = "rgba(255,255,255,0.85)";
+  ctx.fillRect(-r * 0.25, -r * 0.4, r * 0.3, r * 0.3);
+
   ctx.restore();
 }

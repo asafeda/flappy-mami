@@ -65,4 +65,5 @@ export const GROUND = {
 
 export const STORAGE_KEYS = {
   highScore: "flappyMami.highScore",
+  birdSkin: "flappyMami.birdSkin",
 };

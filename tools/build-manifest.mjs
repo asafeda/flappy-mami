@@ -38,10 +38,54 @@ async function readJsonIfExists(filePath) {
   }
 }
 
+// Turns "mami-face_02.png" into "MAMI FACE 02" as a friendly default label.
+function labelFromFilename(filename) {
+  const base = filename.replace(/\.[^.]+$/, "");
+  const words = base.replace(/[_-]+/g, " ").trim();
+  return words.toUpperCase() || base.toUpperCase();
+}
+
+async function buildBirdSkins() {
+  const [newFolderFiles, legacyFolderFiles] = await Promise.all([
+    listFiles(path.join(ASSETS, "birds"), IMAGE_EXT),
+    listFiles(path.join(ASSETS, "bird"), IMAGE_EXT),
+  ]);
+
+  const config =
+    (await readJsonIfExists(path.join(ASSETS, "birds", "birds.config.json"))) ||
+    {};
+
+  // Each image file is its own standalone skin (no more multi-frame birds).
+  // assets/birds/ is the current home; assets/bird/ (singular, legacy) still
+  // works so older drops keep functioning without changes.
+  const entries = [
+    ...newFolderFiles
+      .filter((f) => f !== "birds.config.json")
+      .map((file) => ({ file, dir: "birds" })),
+    ...legacyFolderFiles.map((file) => ({ file, dir: "bird" })),
+  ];
+
+  const seen = new Set();
+  const birds = [];
+  for (const { file, dir } of entries) {
+    if (seen.has(file)) continue; // birds/ wins over legacy bird/ on name clash
+    seen.add(file);
+    const override = config[file] || {};
+    birds.push({
+      id: override.id || file.replace(/\.[^.]+$/, ""),
+      file: `assets/${dir}/${file}`,
+      label: override.label || labelFromFilename(file),
+      order: typeof override.order === "number" ? override.order : birds.length,
+    });
+  }
+  birds.sort((a, b) => a.order - b.order);
+  return birds;
+}
+
 async function main() {
-  const [birdFiles, collectibleFiles, backgroundFiles, uiFiles, audioFiles] =
+  const [birds, collectibleFiles, backgroundFiles, uiFiles, audioFiles] =
     await Promise.all([
-      listFiles(path.join(ASSETS, "bird"), IMAGE_EXT),
+      buildBirdSkins(),
       listFiles(path.join(ASSETS, "collectibles"), IMAGE_EXT),
       listFiles(path.join(ASSETS, "backgrounds"), IMAGE_EXT),
       listFiles(path.join(ASSETS, "ui"), IMAGE_EXT),
@@ -67,7 +111,10 @@ async function main() {
 
   const manifest = {
     generatedAt: new Date().toISOString(),
-    bird: birdFiles.map((f) => `assets/bird/${f}`),
+    birds,
+    // Legacy key kept for backward compatibility with any cached manifest.json
+    // readers; the game itself now reads `birds`.
+    bird: birds.map((b) => b.file),
     collectibles,
     backgrounds,
     defaultBackground: defaultBg || backgrounds[0] || null,
@@ -89,7 +136,7 @@ async function main() {
   await writeFile(outPath, JSON.stringify(manifest, null, 2));
 
   console.log(`manifest.json written with:
-  bird frames:   ${manifest.bird.length}
+  bird skins:    ${manifest.birds.length} (+ built-in classic)
   collectibles:  ${manifest.collectibles.length}
   backgrounds:   ${manifest.backgrounds.length}
   title:         ${manifest.ui.title ? "yes" : "no (placeholder will be used)"}`);

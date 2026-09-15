@@ -25,7 +25,7 @@ async function fetchManifest() {
     return await res.json();
   } catch {
     return {
-      bird: [],
+      birds: [],
       collectibles: [],
       backgrounds: [],
       defaultBackground: null,
@@ -37,10 +37,17 @@ async function fetchManifest() {
 
 export async function loadAssets() {
   const manifest = await fetchManifest();
+  const birdDefs = manifest.birds && manifest.birds.length
+    ? manifest.birds
+    : (manifest.bird || []).map((file) => ({
+        id: file,
+        file,
+        label: file.split("/").pop().replace(/\.[^.]+$/, "").toUpperCase(),
+      }));
 
-  const [birdFrames, collectibleImages, backgroundImages, titleImg, pipeBodyImg, pipeCapImg, groundImg] =
+  const [birdImages, collectibleImages, backgroundImages, titleImg, pipeBodyImg, pipeCapImg, groundImg] =
     await Promise.all([
-      Promise.all((manifest.bird || []).map(loadImage)),
+      Promise.all(birdDefs.map((b) => loadImage(b.file))),
       Promise.all((manifest.collectibles || []).map((c) => loadImage(c.file))),
       Promise.all((manifest.backgrounds || []).map(loadImage)),
       manifest.ui?.title ? loadImage(manifest.ui.title) : Promise.resolve(null),
@@ -49,7 +56,10 @@ export async function loadAssets() {
       manifest.ui?.ground ? loadImage(manifest.ui.ground) : Promise.resolve(null),
     ]);
 
-  const bird = birdFrames.filter(Boolean);
+  // Each skin is one static picture (no more multi-frame flap animation art).
+  const birds = birdDefs
+    .map((b, i) => ({ id: b.id, label: b.label, image: birdImages[i] }))
+    .filter((b) => b.image);
 
   const collectibles = (manifest.collectibles || [])
     .map((c, i) => ({ ...c, image: collectibleImages[i] }))
@@ -78,7 +88,7 @@ export async function loadAssets() {
   };
 
   return {
-    bird,
+    birds,
     collectibles,
     backgrounds,
     title: titleImg,

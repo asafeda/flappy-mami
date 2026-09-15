@@ -90,13 +90,14 @@ export class PipeManager {
     return false;
   }
 
-  draw(ctx, assets) {
+  draw(ctx, assets, tier = 0) {
+    const palette = paletteForTier(tier);
     for (const pipe of this.pipes) {
-      this.drawPipe(ctx, assets, pipe);
+      this.drawPipe(ctx, assets, pipe, palette);
     }
   }
 
-  drawPipe(ctx, assets, pipe) {
+  drawPipe(ctx, assets, pipe, palette) {
     const bottom = this.playableBottom();
     if (assets.pipeBody && assets.pipeCap) {
       drawImagePipeSegment(ctx, assets, pipe.x, 0, pipe.width, pipe.gapTop, true);
@@ -110,17 +111,32 @@ export class PipeManager {
         false
       );
     } else {
-      drawPlaceholderPipeSegment(ctx, pipe.x, 0, pipe.width, pipe.gapTop, true);
+      drawPlaceholderPipeSegment(ctx, pipe.x, 0, pipe.width, pipe.gapTop, true, palette);
       drawPlaceholderPipeSegment(
         ctx,
         pipe.x,
         pipe.gapBottom,
         pipe.width,
         bottom - pipe.gapBottom,
-        false
+        false,
+        palette
       );
     }
   }
+}
+
+// Pipe color deepens as difficulty ramps up: green -> teal -> violet.
+const TIER_PALETTES = [
+  { body: "#5fd45f", light: "#8ff08f", dark: "#2e7d32", cap: "#6fe06f" },
+  { body: "#3fc7b0", light: "#7fe8d8", dark: "#1f6e63", cap: "#4fd8c0" },
+  { body: "#4aa8e0", light: "#8ccdf0", dark: "#245e8a", cap: "#5cb8ec" },
+  { body: "#9a6fe0", light: "#c3a6f2", dark: "#4f2e8a", cap: "#a97ef0" },
+  { body: "#e05fa0", light: "#f0a0c8", dark: "#8a2e5e", cap: "#ec6fb0" },
+];
+
+function paletteForTier(tier) {
+  const idx = Math.min(TIER_PALETTES.length - 1, Math.floor(tier / 2));
+  return TIER_PALETTES[idx];
 }
 
 function drawImagePipeSegment(ctx, assets, x, y, width, height, isTop) {
@@ -139,23 +155,45 @@ function drawImagePipeSegment(ctx, assets, x, y, width, height, isTop) {
   ctx.restore();
 }
 
-function drawPlaceholderPipeSegment(ctx, x, y, width, height, isTop) {
+function drawPlaceholderPipeSegment(ctx, x, y, width, height, isTop, palette) {
   if (height <= 0) return;
+  const pal = palette || TIER_PALETTES[0];
   ctx.save();
-  ctx.fillStyle = "#4caf50";
-  ctx.strokeStyle = "#2e7d32";
-  ctx.lineWidth = 3;
-  ctx.fillRect(x, y, width, height);
-  ctx.strokeRect(x, y, width, height);
+  ctx.imageSmoothingEnabled = false;
 
+  // Body: flat fill + a left highlight band and right shade band for a
+  // chunky pixel-art bevel, then a hard dark outline.
+  ctx.fillStyle = pal.body;
+  ctx.fillRect(x, y, width, height);
+
+  const bandW = Math.max(4, Math.round(width * 0.22));
+  ctx.fillStyle = pal.light;
+  ctx.fillRect(x, y, bandW, height);
+  ctx.fillStyle = pal.dark;
+  ctx.fillRect(x + width - bandW, y, bandW, height);
+
+  ctx.strokeStyle = pal.dark;
+  ctx.lineWidth = 3;
+  ctx.strokeRect(x + 1.5, y + 1.5, width - 3, height - 3);
+
+  // Cap: wider rim with a rivet row.
   const capH = PIPES.capHeight;
-  ctx.fillStyle = "#66bb6a";
-  if (isTop) {
-    ctx.fillRect(x - 4, y + height - capH, width + 8, capH);
-    ctx.strokeRect(x - 4, y + height - capH, width + 8, capH);
-  } else {
-    ctx.fillRect(x - 4, y, width + 8, capH);
-    ctx.strokeRect(x - 4, y, width + 8, capH);
-  }
+  const capY = isTop ? y + height - capH : y;
+  ctx.fillStyle = pal.cap;
+  ctx.fillRect(x - 4, capY, width + 8, capH);
+  ctx.fillStyle = pal.light;
+  ctx.fillRect(x - 4, capY, width + 8, Math.max(3, Math.round(capH * 0.25)));
+  ctx.strokeStyle = pal.dark;
+  ctx.lineWidth = 3;
+  ctx.strokeRect(x - 4 + 1.5, capY + 1.5, width + 8 - 3, capH - 3);
+
+  ctx.fillStyle = pal.dark;
+  const rivetY = capY + capH / 2;
+  const rivetR = 2;
+  ctx.beginPath();
+  ctx.arc(x + 6, rivetY, rivetR, 0, Math.PI * 2);
+  ctx.arc(x + width - 6, rivetY, rivetR, 0, Math.PI * 2);
+  ctx.fill();
+
   ctx.restore();
 }
