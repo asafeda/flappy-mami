@@ -207,53 +207,16 @@ export class Game {
       return;
     }
 
+    const tile = getGroundTile(h);
+    const tw = tile.width;
+    const grassH = GROUND_GRASS_H;
+    const scroll = ((this.groundScroll % tw) + tw) % tw;
+
     ctx.save();
     ctx.imageSmoothingEnabled = false;
-
-    // Dirt base
-    ctx.fillStyle = "#c9903f";
-    ctx.fillRect(0, y, w, h);
-
-    // Chunky checkerboard/brick texture. Every tile scrolls in the same
-    // direction (matching the pipes/background); alternating rows just get a
-    // fixed half-tile stagger for the classic brick look, so nothing drifts
-    // backwards like the old dithered-speckle version did.
-    const tile = 18;
-    const scroll = Math.floor(this.groundScroll) % tile;
-    const rows = Math.ceil(h / tile);
-    const cols = Math.ceil(w / tile) + 2;
-    for (let row = 0; row < rows; row++) {
-      const ry = y + row * tile;
-      const rowShift = (row % 2) * (tile / 2);
-      for (let col = -1; col < cols; col++) {
-        const rx = col * tile - scroll + rowShift;
-        if ((col + row) % 2 === 0) {
-          ctx.fillStyle = "#dba750";
-        } else {
-          ctx.fillStyle = "#b9822f";
-        }
-        ctx.fillRect(rx, ry, tile - 2, tile - 2);
-      }
+    for (let x = -Math.floor(scroll); x < w; x += tw) {
+      ctx.drawImage(tile, x, y - grassH);
     }
-
-    // Grass cap along the top edge (the actual collision line).
-    const grassH = 14;
-    ctx.fillStyle = "#7cd858";
-    ctx.fillRect(0, y - grassH, w, grassH);
-    ctx.fillStyle = "#5fb844";
-    const toothW = 10;
-    const toothOffset = Math.floor(this.groundScroll) % (toothW * 2);
-    for (let x = -toothOffset; x < w; x += toothW * 2) {
-      ctx.fillRect(x, y - grassH, toothW, 5);
-    }
-
-    ctx.strokeStyle = "#3f7a2c";
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(0, y - grassH);
-    ctx.lineTo(w, y - grassH);
-    ctx.stroke();
-
     ctx.restore();
   }
 
@@ -309,4 +272,107 @@ export class Game {
       );
     }
   }
+}
+
+// Classic Flappy-style ground: a repeating grass lip over beige dirt, baked
+// into one tile so the whole strip scrolls as a single texture.
+const GROUND_PX = 4;
+const GROUND_GRASS_ART_H = 6;
+const GROUND_GRASS_H = GROUND_GRASS_ART_H * GROUND_PX;
+const GROUND_COLORS = {
+  O: "#3a7a18", // grass outline
+  H: "#d4f86c", // grass highlight
+  M: "#8ee04a", // grass mid
+  S: "#5cb830", // grass shade
+  D: "#4aa028", // grass deep
+  dirt: "#ded895",
+  dirtHi: "#ebe6b4",
+  dirtLo: "#c4b86a",
+  dirtDot: "#b8ac58",
+  seam: "#5a4a1e",
+};
+
+// 8-wide repeating scallop on top of a solid grass band. Left slope is
+// lit, right slope is shaded — the OG Flappy "little hills of grass" lip.
+const GRASS_UNIT = [
+  "..OO....",
+  ".OHHSO..",
+  "OHHMMSSO",
+  "MMMMMMMM",
+  "MMMMMMDD",
+  "DDDDDDDD",
+];
+
+let cachedGroundTile = null;
+let cachedGroundDirtH = -1;
+
+function getGroundTile(dirtH) {
+  if (cachedGroundTile && cachedGroundDirtH === dirtH) return cachedGroundTile;
+  cachedGroundDirtH = dirtH;
+  cachedGroundTile = buildGroundTile(dirtH);
+  return cachedGroundTile;
+}
+
+function buildGroundTile(dirtH) {
+  const px = GROUND_PX;
+  const artW = GRASS_UNIT[0].length * 2; // two mounds
+  const tw = artW * px;
+  const grassH = GROUND_GRASS_H;
+  const canvas = document.createElement("canvas");
+  canvas.width = tw;
+  canvas.height = grassH + dirtH;
+  const g = canvas.getContext("2d");
+  g.imageSmoothingEnabled = false;
+
+  g.fillStyle = GROUND_COLORS.dirt;
+  g.fillRect(0, grassH, tw, dirtH);
+
+  // Darker band right under the grass, then a hard seam — reads as the
+  // collision lip without looking like a separate scrolling layer.
+  g.fillStyle = "#d4cb82";
+  g.fillRect(0, grassH, tw, px * 2);
+  g.fillStyle = GROUND_COLORS.seam;
+  g.fillRect(0, grassH, tw, Math.max(2, Math.round(px / 2)));
+
+  // Sparse pebbles, placed so they wrap cleanly at the tile edges.
+  const dirtArtH = Math.ceil(dirtH / px);
+  const pebbles = [
+    [1, 3, 2, 1, "dirtLo"],
+    [7, 2, 1, 1, "dirtHi"],
+    [13, 5, 1, 1, "dirtDot"],
+    [4, 6, 1, 1, "dirtLo"],
+    [10, 8, 2, 1, "dirtHi"],
+    [15, 7, 1, 1, "dirtLo"],
+    [2, 11, 1, 1, "dirtDot"],
+    [8, 10, 1, 2, "dirtLo"],
+    [12, 13, 1, 1, "dirtHi"],
+    [5, 14, 2, 1, "dirtLo"],
+    [0, 16, 1, 1, "dirtHi"],
+    [14, 17, 2, 1, "dirtDot"],
+    [6, 19, 1, 1, "dirtLo"],
+    [11, 20, 1, 1, "dirtHi"],
+    [3, 21, 1, 1, "dirtDot"],
+    [9, 23, 2, 1, "dirtLo"],
+  ];
+  for (const [ax, ay, aw, ah, key] of pebbles) {
+    if (ay >= dirtArtH) continue;
+    g.fillStyle = GROUND_COLORS[key];
+    g.fillRect(ax * px, grassH + ay * px, aw * px, ah * px);
+  }
+
+  const rows = GRASS_UNIT.length;
+  const unitW = GRASS_UNIT[0].length;
+  for (let copy = 0; copy < 2; copy++) {
+    for (let ry = 0; ry < rows; ry++) {
+      const row = GRASS_UNIT[ry];
+      for (let rx = 0; rx < unitW; rx++) {
+        const ch = row[rx];
+        if (ch === ".") continue;
+        g.fillStyle = GROUND_COLORS[ch];
+        g.fillRect((copy * unitW + rx) * px, ry * px, px, px);
+      }
+    }
+  }
+
+  return canvas;
 }
