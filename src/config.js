@@ -61,8 +61,8 @@ export const BACKGROUND = {
 
 export const BOSS = {
   name: "QUEEN OF JUKIM",
-  firstPipe: 30, // fight #1 starts once this many pipes are passed
-  everyPipes: 30, // fight #2 at 60, #3 at 90, ...
+  firstPipe: 10, // fight #1 starts once this many pipes are passed (temp: was 30, revert later)
+  everyPipes: 10, // fight #2 at 20, #3 at 30, ... (temp: was 30, revert later)
   durationPipes: 5, // fight stays active for this many pipes, then leaves
   size: 160, // fits within a size x size box, aspect-ratio preserved
   xFraction: 0.78, // fixed screen x, as a fraction of world width
@@ -83,7 +83,7 @@ export const BANNER = {
   holdSec: 1.8, // holds at rest, readable
   fallSec: 0.5, // flies back down to the ground
   restYFraction: 0.34, // resting y, as a fraction of world height
-  scale: 6,
+  scale: 5, // fits "QUEEN OF JUKIM" within the 480-wide world with margin
 };
 
 export const FIREBALL = {

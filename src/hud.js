@@ -1,5 +1,6 @@
 import { drawPixelText, measurePixelText } from "./pixelfont.js";
 import { drawSkinPreview } from "./bird.js";
+import { BANNER } from "./config.js";
 
 const INK = "#1a1a2e";
 const PAPER = "#ffffff";
@@ -37,8 +38,16 @@ const FIRE_ROWS = [
 // flame-colored text with a slight per-frame jitter so it flickers in place.
 export function drawBossBanner(ctx, worldWidth, y, text) {
   ctx.save();
-  const scale = 6;
-  const { width } = measurePixelText(text, scale);
+  // Shrink to fit with side margins, in case a longer name is ever used —
+  // BANNER.scale is just the preferred/starting size.
+  const sidePadding = 24;
+  let scale = BANNER.scale;
+  let { width } = measurePixelText(text, scale);
+  const maxWidth = worldWidth - sidePadding * 2;
+  if (width > maxWidth) {
+    scale = Math.max(1, scale * (maxWidth / width));
+    width = measurePixelText(text, scale).width;
+  }
   const x = worldWidth / 2 - width / 2;
   const jitter = Math.sin(performance.now() / 42) * 1;
 
