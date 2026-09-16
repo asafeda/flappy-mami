@@ -93,6 +93,13 @@ export class BossManager {
   }
 
   update(dt, speed, pipesPassed, bird) {
+    // Fireballs already in flight must keep moving and get pruned once
+    // off-screen no matter what the boss itself is doing — otherwise the
+    // last shot of a fight freezes in place forever once the boss exits
+    // back to "idle" (that state returns early, below, before ever reaching
+    // fireball logic).
+    this.updateFireballs(dt);
+
     const hoverStep = dt * ((Math.PI * 2) / BOSS.hoverPeriod);
 
     if (this.state === "idle") {
@@ -149,8 +156,6 @@ export class BossManager {
         this.fightIndex++;
       }
     }
-
-    this.updateFireballs(dt);
   }
 
   spawnFireballs(bird) {
