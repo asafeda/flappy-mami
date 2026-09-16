@@ -12,6 +12,7 @@ Play it live at: `https://<your-github-username>.github.io/flappy-mami/`
 - Collectibles start appearing from **5 points** onward and are worth **2 points** each. They spawn in the open space **between** pipe columns (never inside a pipe gap), on a reachable but increasingly tricky flight path. Until you drop in your own PNGs, spinning 8-bit coins spawn as fallbacks.
 - 8-bit sound effects play on flap, score, coin collect, and crash. Dropping your own `mp3` files in `assets/audio/` replaces the built-in chiptune.
 - The run starts on the built-in 8-bit sky (or `assets/backgrounds/default.*` if you add one). Every **10 pipes** passed, the background crossfades to the next uploaded wallpaper in filename order, then wraps.
+- After **pipe 30**, and again every **30 pipes** after that (60, 90, ...), the boss **"QUEEN OF JUKIM"** shows up for **5 pipes**. A fiery name banner flies up from the ground, the boss glides in from the right and hovers there, and it spits fireballs aimed at you (with a short mouth-flash telegraph before each shot) until it leaves. Touching a fireball kills you instantly; pipes keep coming as normal the whole time. Each repeat fight fires faster, and from the second fight onward it fires 2-shot vertical volleys. Drop art into `assets/boss/` to replace the built-in placeholder boss.
 - Until you add your own art, the game runs fully playable with a hand-drawn 8-bit look: blocky bird, pixel-outlined pipes, banded sky with parallax hills/clouds, and a bitmap-font HUD.
 
 ## Adding your own assets (no code changes needed)
@@ -26,9 +27,10 @@ Photoshop setup for every asset: **New Document → RGB Color, 8-bit, sRGB, 72 p
 | Bird skins | `assets/birds/*.png` (any filename, one skin per file) | Square, e.g. 288x288 px | Each image is a **complete, static skin** — a face photo, a drawing, anything square. It gets circle-cropped and framed automatically, with a small pixel wing/beak drawn on top so it still flaps like a bird. Drop as many as you want; each becomes a choice in the in-game picker (alongside the built-in "Classic" 8-bit bird, which is always first). Rename files to control the label shown in the picker (e.g. `mami-face.png` → "MAMI FACE"), or set custom labels/order in `assets/birds/birds.config.json`. |
 | Collectibles | `assets/collectibles/*.png` (any filename) | 120 x 120 px each, transparent | Add as many as you want — each is picked randomly, and they **replace** the built-in 8-bit coins. Bold silhouette + thick outline so it reads small. Optionally override points/effects per file in `assets/collectibles/collectibles.config.json`. |
 | Backgrounds | `assets/backgrounds/default.jpg` (optional) + any others (`bg1.png`, …) | 1440 x 2880 px | Keep key art inside the central 1440x2560 safe area. The built-in 8-bit sky (or `default.*` if present) shows at the start; every other file joins a filename-order round-robin every 10 pipes. JPEG quality 80–85 (~350KB) or PNG. |
+| Boss | `assets/boss/*.png` (any filename) | 480 x 480 px, transparent, **facing left** | Rendered at 160x160 (any aspect ratio gets fit into that box, so non-square art is fine too). Keep the mouth/muzzle roughly vertically centered — that's where fireballs spawn from. If you export with an opaque background instead of transparency, the game auto-mattes a flat edge-to-edge background color away, so it still floats free. Drop more than one file and each boss fight round-robins to the next, in filename order. |
 | Pipes (optional) | `assets/ui/pipe-body.png` (192x960, vertically tileable), `assets/ui/pipe-cap.png` (216x96) | Replaces the procedural pixel pipes if both are present. |
 | Ground (optional) | `assets/ui/ground.png` (1440x336, horizontally tileable) | Replaces the procedural scrolling ground strip. |
-| Sounds (optional) | `assets/audio/flap.mp3`, `point.mp3`, `collect.mp3`, `hit.mp3`, `ui.mp3` | Mono, 44.1kHz, <30KB each. Omit any file to keep the built-in 8-bit version of that cue. |
+| Sounds (optional) | `assets/audio/flap.mp3`, `point.mp3`, `collect.mp3`, `hit.mp3`, `ui.mp3`, `boss.mp3`, `fireball.mp3` | Mono, 44.1kHz, <30KB each. Omit any file to keep the built-in 8-bit version of that cue. |
 | Home screen icon (optional) | `assets/ui/icon-512.png` | 512x512 px, opaque | Used for "Add to Home Screen". |
 
 `assets/bird/` (singular, the old folder) still works exactly as before for backward compatibility — each file in it becomes a skin too — but new drops should go in `assets/birds/`.
@@ -48,6 +50,7 @@ Any file without an entry gets an auto-generated label from its filename and app
 Collision/render sizes used by the game engine (for reference, no code change needed):
 - Bird hitbox: circle, radius 15 world units (art renders at 48x48, circle-cropped).
 - Collectible hitbox: circle, radius 20 world units (art renders at 48x48).
+- Fireball hitbox: circle, radius 11 world units (art renders at 32x32). The boss sprite itself has no hitbox — only its fireballs can kill you.
 
 ### Tuning per-collectible points/effects
 
@@ -92,10 +95,13 @@ src/
   input.js                  Tap/keyboard input mapped to world coords, iOS audio unlock
   game.js                   ready / playing / dead state machine, skin picker taps
   skins.js                  Bird skin list + localStorage persistence
-  pixelfont.js              Baked-in 5x7 bitmap font used by all HUD text
+  pixelfont.js              Baked-in 5x7 bitmap font used by all HUD text (+ fire-gradient rows)
   coins.js                  Procedural spinning 8-bit Mario-style coin sprites
+  fireball.js               Procedural 8-bit fireball projectile sprite
+  boss.js                   Boss fight state machine, fireball aiming, name banner timing
+  imageutils.js             Auto-mattes a flat opaque background into transparency
   bird.js, pipes.js, collectibles.js, background.js, difficulty.js, hud.js, storage.js
-assets/                     Your art and audio go here (assets/birds/ for bird skins)
+assets/                     Your art and audio go here (assets/birds/ for bird skins, assets/boss/ for boss art)
 tools/build-manifest.mjs    Generates manifest.json from the assets/ folder
 .github/workflows/deploy.yml
 ```

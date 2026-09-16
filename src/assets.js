@@ -5,6 +5,7 @@
 // to synthesized chiptune in sfx.js.
 
 import { createBuiltinCoins } from "./coins.js";
+import { matteEdgeBackground } from "./imageutils.js";
 
 function loadImage(src) {
   return new Promise((resolve) => {
@@ -33,6 +34,7 @@ async function fetchManifest() {
       collectibles: [],
       backgrounds: [],
       defaultBackground: null,
+      boss: [],
       ui: {},
       audio: {},
     };
@@ -49,11 +51,12 @@ export async function loadAssets() {
         label: file.split("/").pop().replace(/\.[^.]+$/, "").toUpperCase(),
       }));
 
-  const [birdImages, collectibleImages, backgroundImages, titleImg, pipeBodyImg, pipeCapImg, groundImg] =
+  const [birdImages, collectibleImages, backgroundImages, bossImages, titleImg, pipeBodyImg, pipeCapImg, groundImg] =
     await Promise.all([
       Promise.all(birdDefs.map((b) => loadImage(b.file))),
       Promise.all((manifest.collectibles || []).map((c) => loadImage(c.file))),
       Promise.all((manifest.backgrounds || []).map(loadImage)),
+      Promise.all((manifest.boss || []).map(loadImage)),
       manifest.ui?.title ? loadImage(manifest.ui.title) : Promise.resolve(null),
       manifest.ui?.pipeBody ? loadImage(manifest.ui.pipeBody) : Promise.resolve(null),
       manifest.ui?.pipeCap ? loadImage(manifest.ui.pipeCap) : Promise.resolve(null),
@@ -85,12 +88,20 @@ export async function loadAssets() {
     : null;
   const backgrounds = allBackgrounds.filter((b) => b.src !== defaultSrc);
 
+  // Boss art commonly gets exported with an opaque white canvas instead of
+  // transparency — matte it away so the sprite doesn't show as a hard box.
+  const bosses = (manifest.boss || [])
+    .map((src, i) => ({ src, image: bossImages[i] && matteEdgeBackground(bossImages[i]) }))
+    .filter((b) => b.image);
+
   const sounds = {
     flap: loadAudio(manifest.audio?.flap),
     point: loadAudio(manifest.audio?.point),
     collect: loadAudio(manifest.audio?.collect),
     hit: loadAudio(manifest.audio?.hit),
     ui: loadAudio(manifest.audio?.ui),
+    boss: loadAudio(manifest.audio?.boss),
+    fireball: loadAudio(manifest.audio?.fireball),
   };
 
   return {
@@ -98,6 +109,7 @@ export async function loadAssets() {
     collectibles,
     defaultBackground,
     backgrounds,
+    bosses,
     title: titleImg,
     pipeBody: pipeBodyImg,
     pipeCap: pipeCapImg,

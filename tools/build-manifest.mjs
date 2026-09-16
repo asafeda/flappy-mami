@@ -83,13 +83,14 @@ async function buildBirdSkins() {
 }
 
 async function main() {
-  const [birds, collectibleFiles, backgroundFiles, uiFiles, audioFiles] =
+  const [birds, collectibleFiles, backgroundFiles, uiFiles, audioFiles, bossFiles] =
     await Promise.all([
       buildBirdSkins(),
       listFiles(path.join(ASSETS, "collectibles"), IMAGE_EXT),
       listFiles(path.join(ASSETS, "backgrounds"), IMAGE_EXT),
       listFiles(path.join(ASSETS, "ui"), IMAGE_EXT),
       listFiles(path.join(ASSETS, "audio"), AUDIO_EXT),
+      listFiles(path.join(ASSETS, "boss"), IMAGE_EXT),
     ]);
 
   const collectiblesConfig =
@@ -108,6 +109,7 @@ async function main() {
   const backgrounds = backgroundFiles.map((file) => `assets/backgrounds/${file}`);
   // Ensure default.* (if present) is first / always included as the score-0 background.
   const defaultBg = backgrounds.find((b) => /\/default\.(jpg|jpeg|png|webp)$/i.test(b));
+  const boss = bossFiles.map((file) => `assets/boss/${file}`);
 
   const manifest = {
     generatedAt: new Date().toISOString(),
@@ -118,6 +120,7 @@ async function main() {
     collectibles,
     backgrounds,
     defaultBackground: defaultBg || null,
+    boss,
     ui: {
       title: uiFiles.includes("title.png") ? "assets/ui/title.png" : null,
       pipeBody: uiFiles.includes("pipe-body.png") ? "assets/ui/pipe-body.png" : null,
@@ -130,6 +133,8 @@ async function main() {
       collect: audioFiles.includes("collect.mp3") ? "assets/audio/collect.mp3" : null,
       hit: audioFiles.includes("hit.mp3") ? "assets/audio/hit.mp3" : null,
       ui: audioFiles.includes("ui.mp3") ? "assets/audio/ui.mp3" : null,
+      boss: audioFiles.includes("boss.mp3") ? "assets/audio/boss.mp3" : null,
+      fireball: audioFiles.includes("fireball.mp3") ? "assets/audio/fireball.mp3" : null,
     },
   };
 
@@ -140,6 +145,7 @@ async function main() {
   bird skins:    ${manifest.birds.length} (+ built-in classic)
   collectibles:  ${manifest.collectibles.length}
   backgrounds:   ${manifest.backgrounds.length}
+  boss art:      ${manifest.boss.length} (+ procedural placeholder)
   title:         ${manifest.ui.title ? "yes" : "no (placeholder will be used)"}`);
 }
 

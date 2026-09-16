@@ -59,6 +59,42 @@ export const BACKGROUND = {
   parallaxFactor: 0.35, // fraction of world scroll speed
 };
 
+export const BOSS = {
+  name: "QUEEN OF JUKIM",
+  firstPipe: 30, // fight #1 starts once this many pipes are passed
+  everyPipes: 30, // fight #2 at 60, #3 at 90, ...
+  durationPipes: 5, // fight stays active for this many pipes, then leaves
+  size: 160, // fits within a size x size box, aspect-ratio preserved
+  xFraction: 0.78, // fixed screen x, as a fraction of world width
+  hoverAmplitude: 90, // vertical sine bob range, clamped to fit the play area
+  hoverPeriod: 3.2, // seconds per full bob cycle
+  leaveSec: 0.6, // time to slide back off-screen after the fight ends
+  fireIntervalBase: 1.35, // seconds between shots on fight #1
+  fireIntervalPerFight: 0.15, // interval shrinks by this much each repeat fight
+  fireIntervalMin: 0.7,
+  chargeSec: 0.25, // mouth flash/telegraph just before a shot fires
+  maxActiveFireballs: 3,
+  volleyFromFight: 1, // fightIndex >= this fires a 2-shot vertical volley (0 = fight #1)
+  volleySpread: 40, // vertical offset between volley shots, at the target
+};
+
+export const BANNER = {
+  riseSec: 0.5, // flies up from below the ground
+  holdSec: 1.8, // holds at rest, readable
+  fallSec: 0.5, // flies back down to the ground
+  restYFraction: 0.34, // resting y, as a fraction of world height
+  scale: 6,
+};
+
+export const FIREBALL = {
+  size: 32,
+  hitboxRadius: 11,
+  speedBase: 210, // world units/sec on fight #1
+  speedPerFight: 18,
+  speedMax: 340,
+  leadFactor: 0.15, // fraction of the bird's vy used to lead-aim the shot
+};
+
 export const GROUND = {
   height: 96,
 };

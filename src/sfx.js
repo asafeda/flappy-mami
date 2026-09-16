@@ -147,6 +147,26 @@ const SYNTH = {
   ui(ctx, t) {
     playPulse(ctx, t, { freq: 1320, dur: 0.05, gain: 0.08, duty: 0.25 });
   },
+
+  // Two-tone descending alarm — the boss is about to appear.
+  bossWarn(ctx, t) {
+    playPulse(ctx, t, { freq: 220, freqEnd: 140, dur: 0.22, gain: 0.16, duty: 0.5 });
+    playPulse(ctx, t + 0.26, { freq: 220, freqEnd: 140, dur: 0.22, gain: 0.16, duty: 0.5 });
+  },
+
+  // Short filtered-noise whoosh with a falling pulse underneath — a fireball
+  // launching off the boss.
+  fire(ctx, t) {
+    playNoise(ctx, t, { dur: 0.1, gain: 0.14, cutoff: 2600 });
+    playPulse(ctx, t, {
+      freq: 380,
+      freqEnd: 120,
+      dur: 0.16,
+      gain: 0.1,
+      duty: 0.25,
+      slide: 0.14,
+    });
+  },
 };
 
 export function playSfx(name, fileAudio) {

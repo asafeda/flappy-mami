@@ -19,6 +19,39 @@ export function drawScore(ctx, worldWidth, score, pulse = 0) {
   ctx.restore();
 }
 
+// Fire-gradient row palette for the boss name banner: hot yellow crown
+// fading down to a deep ember red, reusing the flat bitmap font glyphs but
+// recoloring per pixel-row so it reads as dancing flame.
+const FIRE_ROWS = [
+  "#fff2b0",
+  "#ffd23f",
+  "#ff9d1a",
+  "#ff6a00",
+  "#ef3d00",
+  "#c81e00",
+  "#8a1000",
+];
+
+// "QUEEN OF JUKIM" boss intro banner. `y` is driven by BossManager's
+// rise/hold/fall timeline (see boss.js#getBannerInfo); this just renders the
+// flame-colored text with a slight per-frame jitter so it flickers in place.
+export function drawBossBanner(ctx, worldWidth, y, text) {
+  ctx.save();
+  const scale = 6;
+  const { width } = measurePixelText(text, scale);
+  const x = worldWidth / 2 - width / 2;
+  const jitter = Math.sin(performance.now() / 42) * 1;
+
+  drawPixelText(ctx, text, x + jitter, y, {
+    scale,
+    color: "#ff8a1a",
+    rowColors: FIRE_ROWS,
+    shadow: "#2a0400",
+    shadowOffset: 4,
+  });
+  ctx.restore();
+}
+
 // Simple chevron arrow button used by the skin picker. Returns nothing; hit
 // testing is done against the rect the caller already knows it drew.
 function drawArrowButton(ctx, cx, cy, size, direction, pressed) {

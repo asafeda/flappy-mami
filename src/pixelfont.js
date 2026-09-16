@@ -71,6 +71,10 @@ export function measurePixelText(text, scale = 1) {
 export function drawPixelText(ctx, text, x, y, opts = {}) {
   const scale = opts.scale || 2;
   const color = opts.color || "#ffffff";
+  // Optional array of GLYPH_H colors, one per pixel row, top to bottom —
+  // lets callers fake a vertical gradient (e.g. a flame effect) on top of
+  // the flat bitmap font without a bespoke sprite sheet.
+  const rowColors = opts.rowColors || null;
   const shadowColor = opts.shadow || null;
   const shadowOffset = opts.shadowOffset ?? Math.max(1, Math.round(scale / 2));
   const align = opts.align || "left";
@@ -80,13 +84,13 @@ export function drawPixelText(ctx, text, x, y, opts = {}) {
   if (align === "center") startX = x - width / 2;
   else if (align === "right") startX = x - width;
 
-  const drawPass = (ox, oy, fill) => {
+  const drawPass = (ox, oy, fill, perRow) => {
     let cx = ox;
     for (const ch of text) {
       const rows = glyphRows(ch);
-      ctx.fillStyle = fill;
       for (let ry = 0; ry < GLYPH_H; ry++) {
         const row = rows[ry];
+        ctx.fillStyle = perRow ? perRow[ry] : fill;
         for (let rx = 0; rx < GLYPH_W; rx++) {
           if (row[rx] === "1") {
             ctx.fillRect(
@@ -103,9 +107,9 @@ export function drawPixelText(ctx, text, x, y, opts = {}) {
   };
 
   if (shadowColor) {
-    drawPass(startX + shadowOffset, y + shadowOffset, shadowColor);
+    drawPass(startX + shadowOffset, y + shadowOffset, shadowColor, null);
   }
-  drawPass(startX, y, color);
+  drawPass(startX, y, color, rowColors);
 
   return { x: startX, y, width, height: GLYPH_H * scale };
 }

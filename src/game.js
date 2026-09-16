@@ -3,8 +3,9 @@ import { Bird } from "./bird.js";
 import { PipeManager } from "./pipes.js";
 import { CollectibleManager } from "./collectibles.js";
 import { BackgroundManager } from "./background.js";
+import { BossManager } from "./boss.js";
 import { tierForScore, speedForTier } from "./difficulty.js";
-import { drawScore, drawTitleScreen, drawGameOver } from "./hud.js";
+import { drawScore, drawTitleScreen, drawGameOver, drawBossBanner } from "./hud.js";
 import { getHighScore, setHighScoreIfBetter } from "./storage.js";
 import { playSfx } from "./sfx.js";
 import {
@@ -39,6 +40,7 @@ export class Game {
     this.pipes = new PipeManager(this.worldWidth, this.worldHeight);
     this.collectibles = new CollectibleManager(this.worldHeight, () => this.assets);
     this.background = new BackgroundManager(this.worldWidth, this.worldHeight, () => this.assets);
+    this.boss = new BossManager(this.worldWidth, this.worldHeight, () => this.assets);
   }
 
   cycleSkin(direction) {
@@ -82,6 +84,8 @@ export class Game {
     this.collectibles.worldHeight = worldHeight;
     this.background.worldWidth = worldWidth;
     this.background.worldHeight = worldHeight;
+    this.boss.worldWidth = worldWidth;
+    this.boss.worldHeight = worldHeight;
     if (this.state === "ready") {
       this.bird.y = worldHeight / 2;
     }
@@ -98,6 +102,7 @@ export class Game {
     this.pipes.reset();
     this.collectibles.reset();
     this.background.reset();
+    this.boss.reset();
   }
 
   handleTap(point) {
@@ -181,7 +186,13 @@ export class Game {
       playSfx("collect", this.assets.sounds.collect);
     });
 
-    if (this.pipes.collidesWith(this.bird) || this.pipes.hitsGroundOrCeiling(this.bird)) {
+    this.boss.update(dt, speed, this.pipesPassed, this.bird);
+
+    if (
+      this.pipes.collidesWith(this.bird) ||
+      this.pipes.hitsGroundOrCeiling(this.bird) ||
+      this.boss.hitsBird(this.bird)
+    ) {
       this.die();
     }
   }
@@ -233,9 +244,11 @@ export class Game {
     }
 
     this.background.draw(ctx);
+    this.boss.draw(ctx);
     this.pipes.draw(ctx, this.assets, tierForScore(this.score));
     this.collectibles.draw(ctx);
     this.drawGround(ctx);
+    this.boss.drawFireballs(ctx);
     // On the title screen the skin picker's own preview bird takes over this
     // role, so the in-world bird stays hidden to avoid a confusing overlap.
     if (this.state !== "ready") {
@@ -263,6 +276,8 @@ export class Game {
       );
     } else if (this.state === "playing") {
       drawScore(ctx, this.worldWidth, this.score, this.scoreFlashTimer / 0.2);
+      const banner = this.boss.getBannerInfo();
+      if (banner) drawBossBanner(ctx, this.worldWidth, banner.y, banner.text);
     } else if (this.state === "dead") {
       drawScore(ctx, this.worldWidth, this.score, 0);
       this.deadHitRects = drawGameOver(
