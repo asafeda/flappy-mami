@@ -138,19 +138,20 @@ function drawPlaceholderSky(ctx, width, height, scrollX = 0) {
     ctx.fillRect(0, i * bandH, width, bandH + 1);
   });
 
-  // Distant hill silhouette, slow parallax.
-  const hillScroll = (scrollX * 0.3) % width;
-  ctx.fillStyle = "#3f9e6e";
+  // Distant hill silhouette. Tile by one hill-width so the wrap never
+  // leaves a sky-colored gap on the right.
   const hillY = height * 0.62;
   const hillW = width / 3;
-  for (let i = -1; i <= Math.ceil(width / hillW) + 1; i++) {
-    const hx = i * hillW - hillScroll;
+  const hillScroll = ((scrollX * 0.3) % hillW + hillW) % hillW;
+  ctx.fillStyle = "#3f9e6e";
+  for (let hx = -hillW - hillScroll; hx < width; hx += hillW) {
     ctx.beginPath();
     ctx.moveTo(hx, height);
     ctx.lineTo(hx, hillY + 30);
     ctx.lineTo(hx + hillW * 0.5, hillY);
-    ctx.lineTo(hx + hillW, hillY + 30);
-    ctx.lineTo(hx + hillW, height);
+    // +1 overlaps the next hill so a hairline of sky can't sneak through.
+    ctx.lineTo(hx + hillW + 1, hillY + 30);
+    ctx.lineTo(hx + hillW + 1, height);
     ctx.closePath();
     ctx.fill();
   }
