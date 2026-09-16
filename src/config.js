@@ -61,8 +61,8 @@ export const BACKGROUND = {
 
 export const BOSS = {
   name: "QUEEN OF JUKIM",
-  firstPipe: 10, // fight #1 starts once this many pipes are passed (temp: was 30, revert later)
-  everyPipes: 10, // fight #2 at 20, #3 at 30, ... (temp: was 30, revert later)
+  firstPipe: 30, // fight #1 starts once this many pipes are passed
+  everyPipes: 30, // fight #2 at 60, #3 at 90, ...
   durationPipes: 5, // fight stays active for this many pipes, then leaves
   size: 160, // fits within a size x size box, aspect-ratio preserved
   xFraction: 0.78, // fixed screen x, as a fraction of world width
